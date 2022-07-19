@@ -53,9 +53,9 @@ node {
   node_options: {
     [type.googleapis.com/mediapipe.ConstantSidePacketCalculatorOptions]: {
       packet { int_value: 0 }
-      packet { bool_value: true }
       packet { bool_value: false }
-      packet { int_value: 1 }
+      packet { bool_value: false }
+      packet { int_value: 0 }
       packet { int_value: 1 }
     }
   }

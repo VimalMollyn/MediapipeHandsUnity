@@ -27,24 +27,40 @@ namespace Mediapipe.Unity.Tutorial
     private bool hasGPU;
 
     private GameObject[] jointSpheres;
+    private GameObject camScreen;
+    private GameObject line;
+    private LineRenderer lr;
 
     void createSpheres() {
         for(int i=0; i<21; i++) {
             jointSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             jointSpheres[i].transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
         }
-
     }
+
+    void CreateRay(){
+      line = GameObject.Find("Ray");
+      line.AddComponent<LineRenderer>();
+      lr = line.GetComponent<LineRenderer>();
+    }
+
+    void SetRay(Vector3 position, Vector3 direction){
+      lr.SetPosition(0, position);
+      lr.SetPosition(1, position+direction*10);
+    }
+
     private IEnumerator Start()
     {
       jointSpheres = new GameObject[21];
+      camScreen = GameObject.Find("CamScreen");
       createSpheres();
+      CreateRay();
       if (WebCamTexture.devices.Length == 0)
       {
         throw new System.Exception("Web Camera devices are not found");
       }
 
-      var webCamDevice = WebCamTexture.devices[0];
+      var webCamDevice = WebCamTexture.devices[5]; // wide view: 5
       _webCamTexture = new WebCamTexture(webCamDevice.name, _width, _height, _fps);
       _webCamTexture.Play();
 
@@ -65,14 +81,24 @@ namespace Mediapipe.Unity.Tutorial
         hasGPU = true;
       }
 
-      _screen.rectTransform.sizeDelta = new Vector2(_width, _height);
+      // _screen.rectTransform.sizeDelta = new Vector2(_width, _height);
+      _screen.rectTransform.sizeDelta = new Vector2(0f, 0f);
+      camScreen.transform.localScale  = new Vector3(_width/50f, _height/50f, 0.01f);
 
       _inputTexture = new Texture2D(_width, _height, TextureFormat.RGBA32, false);
       _inputPixelData = new Color32[_width * _height];
       _outputTexture = new Texture2D(_width, _height, TextureFormat.RGBA32, false);
       _outputPixelData = new Color32[_width * _height];
 
-      _screen.texture = _outputTexture;
+      // _screen.texture = _outputTexture;
+      camScreen.GetComponent<Renderer>().material.mainTexture = _webCamTexture;
+      // for(var i=0; i < _width; i++) {
+      //   for(var j=0; j < _height; j++) {
+      //       _webCamTexture.SetPixel(_width-i-1, j, _webCamTexture.GetPixel(i,j));
+      //     }
+      // }
+      camScreen.transform.Rotate(180.0f, 0.0f, -90.0f, Space.Self);
+      // _screen.texture = _webCamTexture; 
 
       AssetLoader.Provide(new StreamingAssetsResourceManager());
       yield return AssetLoader.PrepareAssetAsync("hand_landmark_lite.bytes", "hand_landmark_lite.bytes", false); 
@@ -124,10 +150,16 @@ namespace Mediapipe.Unity.Tutorial
           {
             for(int i=0; i<21; i++) {
                 var lm = handWorldLandmarks[0].Landmark[i];
-                jointSpheres[i].transform.position = new Vector3(lm.X * 10f , lm.Y * 10f, lm.Z * 10f);
+                jointSpheres[i].transform.position = new Vector3(lm.X * 10f , lm.Y * 10f, lm.Z * 10f-10f);
             }
+            Vector3 startPos = jointSpheres[5].transform.position;
+            Vector3 endPos = jointSpheres[6].transform.position;
+            Vector3 position = jointSpheres[8].transform.position;
+            Vector3 direction = Vector3.Normalize(endPos - startPos);
+            SetRay(position, direction);
           }
         }
+
 
       }
     }
