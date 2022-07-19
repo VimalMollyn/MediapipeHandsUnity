@@ -26,8 +26,19 @@ namespace Mediapipe.Unity.Tutorial
     private Color32[] _outputPixelData;
     private bool hasGPU;
 
+    private GameObject[] jointSpheres;
+
+    void createSpheres() {
+        for(int i=0; i<21; i++) {
+            jointSpheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            jointSpheres[i].transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        }
+
+    }
     private IEnumerator Start()
     {
+      jointSpheres = new GameObject[21];
+      createSpheres();
       if (WebCamTexture.devices.Length == 0)
       {
         throw new System.Exception("Web Camera devices are not found");
@@ -78,8 +89,10 @@ namespace Mediapipe.Unity.Tutorial
         _graph = new CalculatorGraph(_configAssetCPU.text);
       }
 
-      var poseLandmarkStream = new OutputStream<NormalizedLandmarkListVectorPacket, List<NormalizedLandmarkList>>(_graph, "hand_landmarks");
-      poseLandmarkStream.StartPolling().AssertOk();
+      var handLandmarkStream = new OutputStream<NormalizedLandmarkListVectorPacket, List<NormalizedLandmarkList>>(_graph, "hand_landmarks");
+      var handWorldLandmarkStream = new OutputStream<LandmarkListVectorPacket, List<LandmarkList>>(_graph, "hand_world_landmarks");
+      handLandmarkStream.StartPolling().AssertOk();
+      handWorldLandmarkStream.StartPolling().AssertOk();
       _graph.StartRun().AssertOk();
       stopwatch.Start();
 
@@ -92,23 +105,28 @@ namespace Mediapipe.Unity.Tutorial
 
         yield return new WaitForEndOfFrame();
 
-        try {
-            if (poseLandmarkStream.TryGetNext(out var poseLandmarks))
-            {
-              if (poseLandmarks != null)
-              {
-                // top of the head
-                var nose = poseLandmarks[0].Landmark[0];
-                // var screenPoint = screenRect.GetPoint(nose);
-                var scale = 0.1545784f; // TODO: Not sure how to get this number programmatically
-                // noseSphere.transform.position = new Vector3(-screenPoint.x * scale, screenPoint.y * scale, 90f);
-                Debug.Log(nose.ToString());
-              }
-            }
-        }
-        catch (System.Exception e)
+        if (handLandmarkStream.TryGetNext(out var poseLandmarks))
         {
-            Debug.Log($"Some exception, {e}");
+          if (poseLandmarks != null)
+          {
+            // top of the head
+            var nose = poseLandmarks[0].Landmark[0];
+            // var screenPoint = screenRect.GetPoint(nose);
+            var scale = 0.1545784f; // TODO: Not sure how to get this number programmatically
+            // noseSphere.transform.position = new Vector3(-screenPoint.x * scale, screenPoint.y * scale, 90f);
+            // Debug.Log(nose.ToString());
+          }
+        }
+
+        if (handWorldLandmarkStream.TryGetNext(out var handWorldLandmarks))
+        {
+          if (handWorldLandmarks != null)
+          {
+            for(int i=0; i<21; i++) {
+                var lm = handWorldLandmarks[0].Landmark[i];
+                jointSpheres[i].transform.position = new Vector3(lm.X * 10f , lm.Y * 10f, lm.Z * 10f);
+            }
+          }
         }
 
       }
