@@ -80,11 +80,11 @@ crashlytics-build.properties
 *.sln
 *.unitypackage
 
-*.aar
-*.bc
-*.dll
-*.dylib
-*.so
+# *.aar
+# *.bc
+# *.dll
+# *.dylib
+# *.so
 *.framework/
 
 bazel-*
